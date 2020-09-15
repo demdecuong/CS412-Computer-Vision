@@ -20,7 +20,7 @@ class Utils:
             ord('y') : self.computeYDerivative,
             ord('m') : self.computeDerivative,
             ord('v') : self.drawGradient,
-            # ord('r') : self.rotateImage,
+            ord('r') : self.rotateImage,
         }
 
 
@@ -181,6 +181,36 @@ class Utils:
 
         return np.uint8(frame)
 
+    def rotateImage(self,frame):
+        frame = cv2.GaussianBlur(frame, (3, 3), 0)
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+        if not self.windowsOn:
+            cv2.namedWindow("Trackbar")
+            cv2.createTrackbar("Degree", "Trackbar", 0, 180, self.placeHolder)
+            self.windowsOn = True
+
+        angle =  cv2.getTrackbarPos('Degree','Trackbar')
+
+        # grab the dimensions of the image and then determine the
+        # center
+        (h, w) = frame.shape[:2]
+        (cX, cY) = (w // 2, h // 2)
+        # grab the rotation matrix (applying the negative of the
+        # angle to rotate clockwise), then grab the sine and cosine
+        # (i.e., the rotation components of the matrix)
+        M = cv2.getRotationMatrix2D((cX, cY), -angle, 1.0)
+        cos = np.abs(M[0, 0])
+        sin = np.abs(M[0, 1])
+        # compute the new bounding dimensions of the image
+        nW = int((h * sin) + (w * cos))
+        nH = int((h * cos) + (w * sin))
+        # adjust the rotation matrix to take into account translation
+        M[0, 2] += (nW / 2) - cX
+        M[1, 2] += (nH / 2) - cY
+        # perform the actual rotation and return the image
+        frame = cv2.warpAffine(frame, M, (nW, nH))
+        return frame
 
     def processKey(self,frame,rawPressedKey):
         self.pressedKey = rawPressedKey 
